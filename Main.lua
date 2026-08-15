@@ -7,9 +7,11 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 local PacketRemote = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("PacketRemote")
+local ZombiesFolder = Workspace:WaitForChild("Zombies")
 
 local Alive
 
+-- ⚙️ [수정됨] Settings에 ZombiePriorities 테이블 추가
 getgenv().Settings = getgenv().Settings or {
     SelectedWeapon = "None",
     SilentAim = false,
@@ -26,7 +28,65 @@ getgenv().Settings = getgenv().Settings or {
     ForceOpenShop = false,
     RemoveFirstNightLimit =false,
     AutoVote = "None",
+    
+    -- 👇 나중에 커스텀 UI에서 조작할 우선순위 데이터
+    ZombiePriorities = {
+        Annihilator = 7,
+        ArmouredZombie = 1,
+        Assassin = 67,
+        Berserker = 7,
+        Boomer = 1,
+        Boss = 37,
+        Crawler = 1,
+        Destroyer = 7,
+        DrenchWraith = 1,
+        ElectricZombie = 1,
+        Flamer = 1,
+        GuardianZombie = 2,
+        HeadlessZombie = 1,
+        HeavyArmourZombie = 1,
+        HelmetZombie = 1,
+        Hunter = 22,
+        LongArm = 1,
+        LongerArm = 1,
+        Lurker = 3,
+        MinerZombie = 1,
+        RadioactiveZombie = 1,
+        RiotZombie = 1,
+        Slasher = 1,
+        SniperZombie = 52,
+        Spitter = 2,
+        Sponger = 1,
+        SwampGiant = 1,
+        ToxicZombie = 5,
+        Wraith = 1,
+        Zombie = 1
+    }
 }
+
+getgenv().UpdateIgnoreList = true
+getgenv().RaycastIgnoreList = {}
+getgenv().HookIgnoreCache = {}
+
+do -- IgnoreList
+    if getgenv().IgnoreListConnection then getgenv().IgnoreListConnection:Disconnect() end
+    
+    getgenv().IgnoreListConnection = RunService.Heartbeat:Connect(function()
+        if not getgenv().UpdateIgnoreList then return end
+        
+        local ignoreItems = {}
+        local workspaceChildren = Workspace:GetChildren()
+        
+        for i = 1, #workspaceChildren do
+            local child = workspaceChildren[i]
+            if child ~= ZombiesFolder and not child:IsA("Camera") and not child:IsA("Terrain") then
+                ignoreItems[#ignoreItems + 1] = child
+            end
+        end
+        getgenv().RaycastIgnoreList = ignoreItems
+        task.wait(0.5)
+    end)
+end
 
 do -- NetworkHook
     if not getgenv().NetworkHooked then
@@ -188,26 +248,15 @@ do -- TargetManager
     local TargetManager = {}
     TargetManager.CurrentTarget = nil
     TargetManager.Connection = nil
-    TargetManager.LastTick = 0
     
-    local PRIORITY_SETTING = {
-        SniperZombie = 10,
-        Boss = 9,
-        Hunter = 8,
-        Berserker = 7,
-        Destroyer = 7,
-        ToxicZombie = 5,
-        GuardianZombie = 2
-    }
+    local PrintedUnknownZombies = {} -- Debug
 
     local function Update()
-        local currentTick = os.clock()
-        if currentTick - TargetManager.LastTick < 0.05 then return end
-        TargetManager.LastTick = currentTick
         if not Alive() or getgenv().TimeManager.InTime("06:30", "18:00") then
             TargetManager.CurrentTarget = nil
             return
         end
+        
         local character = LocalPlayer.Character
         local humanoid = character and character:FindFirstChildOfClass("Humanoid")
         local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
@@ -215,15 +264,36 @@ do -- TargetManager
             TargetManager.CurrentTarget = nil
             return
         end
+        
         local ZombiesFolder = Workspace:FindFirstChild("Zombies")
         if not ZombiesFolder then
             TargetManager.CurrentTarget = nil
             return
         end
+
+        local currentTool = character:FindFirstChildOfClass("Tool")
+        local hasBleedWeapon = false
+        if currentTool then
+            local otherValues = currentTool:FindFirstChild("OtherValues")
+            if otherValues and otherValues:FindFirstChild("Bleed") then
+                hasBleedWeapon = true
+            end
+        end
+
+        local isFireRampageActive = false
+        local playerValues = LocalPlayer:FindFirstChild("PlayerValues")
+        local perkValues = playerValues and playerValues:FindFirstChild("PerkValues")
+        local fireRampageDuration = perkValues and perkValues:FindFirstChild("FireRampageDuration")
+        
+        if fireRampageDuration and fireRampageDuration.Value > 0 then
+            isFireRampageActive = true
+        end
+
         local humanoidRootPartPosition = humanoidRootPart.Position
-        local targetPriority = 0
+        local targetPriority = -1
         local targetDistance = math.huge
         local targetZombie = nil
+        
         for _, zombie in ZombiesFolder:GetChildren() do
             local zombieHumanoid = zombie:FindFirstChildOfClass("Humanoid")
             local targetPart = zombie:FindFirstChild("Head") or zombie:FindFirstChild("HumanoidRootPart")
@@ -233,8 +303,43 @@ do -- TargetManager
             if zombie.Name == "SwampGiant" then
                 continue
             end
-            local priority = PRIORITY_SETTING[zombie.Name] or 1
+
+            if zombie.Name == "Assassin" then
+                local hood = zombie:FindFirstChild("Hood")
+                if hood and hood.Transparency >= 0.9 then
+                    continue
+                end
+            end
+            
+            -- 🎯 [수정됨] 하드코딩 삭제! 글로벌 세팅에서 현재 우선순위를 실시간으로 가져옵니다.
+            local priority = getgenv().Settings.ZombiePriorities[zombie.Name]
+            
+            if not priority then 
+                priority = 1
+                if not PrintedUnknownZombies[zombie.Name] then
+                    PrintedUnknownZombies[zombie.Name] = true
+                    warn("Found New Zombie:", zombie.Name)
+                end
+            end 
+            
+            local statuses = zombie:FindFirstChild("Statuses")
+            
+            if hasBleedWeapon then
+                local bleedDuration = statuses and statuses:FindFirstChild("BleedDuration")
+                if not bleedDuration or bleedDuration.Value <= 0 then
+                    priority = priority + 10
+                end
+            end
+
+            if isFireRampageActive then
+                local fireDuration = statuses and statuses:FindFirstChild("FireDuration")
+                if not fireDuration or fireDuration.Value <= 0 then
+                    priority = priority + 10
+                end
+            end
+
             local distance = (targetPart.Position - humanoidRootPartPosition).Magnitude
+            
             if priority > targetPriority then
                 targetPriority = priority
                 targetDistance = distance
@@ -244,6 +349,7 @@ do -- TargetManager
                 targetZombie = targetPart
             end
         end 
+        
         TargetManager.CurrentTarget = targetZombie
     end
     
@@ -270,48 +376,91 @@ do -- SilentAim
     function SilentAim.Start()
         if getgenv().SilentAimHooked then return end
         getgenv().SilentAimHooked = true
+        
+        local vecCreate = (typeof(vector) == "table" and vector.create) or Vector3.new
+        
         local OldNamecall
-        OldNamecall = hookmetamethod(game, "__namecall", function(self, packetData, ...)
+        OldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
             local method = getnamecallmethod()
-            if method ~= "FireServer" or self ~= PacketRemote then
-                return OldNamecall(self, packetData, ...)
-            end
-            local settings = getgenv().Settings
-            if not (settings and settings.SilentAim) or type(packetData) ~= "table" or not packetData.WeaponAttack then
-                return OldNamecall(self, packetData, ...)
-            end
-            local attackInfo = packetData.WeaponAttack[1]
-            if not (attackInfo and attackInfo[3]) then
-                return OldNamecall(self, packetData, ...)
-            end
-            local targetManager = getgenv().TargetManager
-            local targetZombie = targetManager and targetManager.CurrentTarget
-            if not targetZombie or not targetZombie.Parent then
-                return OldNamecall(self, packetData, ...)
-            end
-            if not attackInfo[2] then attackInfo[2] = {} end
-            local bulletCount = math.max(1, #attackInfo[2])
-            local targetPosition = targetZombie.Position
-            for i = 1, bulletCount do
-                attackInfo[2][i] = {targetZombie, targetPosition, true}
-            end
-            attackInfo[3].RayOriginPos = targetPosition
-            packetData.CharPos = targetPosition
-            packetData.LookPos = targetPosition
-            if attackInfo[3].CriticalRolls then
-                for i = 1, bulletCount do
-                    attackInfo[3].CriticalRolls[i] = true
+            local args = table.pack(...)
+            
+            if method == "FindPartOnRayWithIgnoreList" then
+                local aimTarget = getgenv().TargetManager and getgenv().TargetManager.CurrentTarget
+                if aimTarget and getgenv().Settings and getgenv().Settings.SilentAim then
+                    local ray, ignoreList, param3, param4 = args[1], args[2], args[3], args[4]
+                    if typeof(ray) == "Ray" then
+                        local camera = Workspace.CurrentCamera
+                        
+                        local origin = aimTarget.Position + (camera.CFrame.Position - aimTarget.Position).Unit * 5
+                        
+                        table.clear(getgenv().HookIgnoreCache)
+                        local cacheIndex = 0
+                        
+                        if type(ignoreList) == "table" then
+                            for i = 1, #ignoreList do 
+                                cacheIndex = cacheIndex + 1
+                                getgenv().HookIgnoreCache[cacheIndex] = ignoreList[i] 
+                            end
+                        end
+                        
+                        local globalIgnoreList = getgenv().RaycastIgnoreList
+                        if type(globalIgnoreList) == "table" then
+                            for i = 1, #globalIgnoreList do 
+                                cacheIndex = cacheIndex + 1
+                                getgenv().HookIgnoreCache[cacheIndex] = globalIgnoreList[i] 
+                            end
+                        end
+                        
+                        args[1] = Ray.new(origin, (aimTarget.Position - origin).Unit * 10000)
+                        args[2] = getgenv().HookIgnoreCache
+                        return OldNamecall(self, unpack(args, 1, args.n))
+                    end
                 end
+                return OldNamecall(self, ...)
             end
-            if attackInfo[3].SuperCritRolls then
-                for i = 1, bulletCount do
-                    attackInfo[3].SuperCritRolls[i] = true
+            
+            if method == "FireServer" and self == PacketRemote then
+                local packetData = args[1]
+                if type(packetData) == "table" and getgenv().Settings and getgenv().Settings.SilentAim then
+                    if packetData.WeaponAttack then
+                        local attackInfo = packetData.WeaponAttack[1]
+                        local aimTarget = getgenv().TargetManager and getgenv().TargetManager.CurrentTarget
+                        
+                        if attackInfo and attackInfo[3] and aimTarget and aimTarget.Parent then
+                            if not attackInfo[2] then attackInfo[2] = {} end
+                            local bulletCount = math.max(1, #attackInfo[2])
+                            
+                            local targetPos = aimTarget.Position
+                            local spoofVec = vecCreate(targetPos.X, targetPos.Y, targetPos.Z)
+                            
+                            for i = 1, bulletCount do
+                                attackInfo[2][i] = {aimTarget, spoofVec, true}
+                            end
+                            
+                            attackInfo[3].RayOriginPos = spoofVec
+                            packetData.CharPos = spoofVec
+                            packetData.LookPos = spoofVec
+                            
+                            if attackInfo[3].CriticalRolls then
+                                for i = 1, bulletCount do
+                                    attackInfo[3].CriticalRolls[i] = true
+                                end
+                            end
+                            if attackInfo[3].SuperCritRolls then
+                                for i = 1, bulletCount do
+                                    attackInfo[3].SuperCritRolls[i] = true
+                                end
+                            end
+                        end
+                    end
                 end
+                return OldNamecall(self, unpack(args, 1, args.n))
             end
-            return OldNamecall(self, packetData, ...)
+            
+            return OldNamecall(self, ...)
         end)
     end
-    
+
     getgenv().SilentAim = SilentAim
 end
 
@@ -1350,6 +1499,7 @@ local Rayfield = loadstring(game:HttpGet("https://sirius.menu/gen2"))()
 getgenv().RayfieldWindow = Rayfield
 local window = Rayfield:CreateWindow({ name = "Test", subtitle = "Made by Sim" })
 local tab = window:CreateTab({ name = "Test" })
+
 getgenv().WeaponDropdown = tab:CreateDropdown({
     name = "Auto Equip", 
     options = getgenv().GetWeaponList(),
@@ -1517,3 +1667,25 @@ tab:CreateDropdown({ -- Auto Vote
         end
     end
 })
+
+local priorityTab = window:CreateTab({ name = "Target Priority" })
+
+local sortedZombies = {}
+for zombieName in pairs(getgenv().Settings.ZombiePriorities) do 
+    table.insert(sortedZombies, zombieName) 
+end
+table.sort(sortedZombies)
+
+for _, zombieName in ipairs(sortedZombies) do
+    priorityTab:CreateSlider({
+        name = zombieName .. " Priority",
+        range = {0, 100},
+        increment = 1,
+        suffix = "Weight",
+        currentValue = getgenv().Settings.ZombiePriorities[zombieName],
+        flag = zombieName .. "_Priority",
+        callback = function(value)
+            getgenv().Settings.ZombiePriorities[zombieName] = value
+        end
+    })
+end
