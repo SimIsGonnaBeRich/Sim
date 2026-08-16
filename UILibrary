@@ -1,0 +1,267 @@
+local Library = {}
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+
+function Library:CreateWindow(titleText)
+    local Window = {}
+    
+    -- 기본 GUI 생성
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "SimUIHub"
+    ScreenGui.IgnoreGuiInset = true
+    ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+
+    local MainFrame = Instance.new("CanvasGroup")
+    MainFrame.Name = "Frame"
+    MainFrame.Size = UDim2.new(0.4, 0, 0.5, 0)
+    MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    MainFrame.Parent = ScreenGui
+    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+
+    -- 상단 바
+    local TopBar = Instance.new("Frame", MainFrame)
+    TopBar.Size = UDim2.new(1, 0, 0.06, 0)
+    TopBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    
+    local TitleLabel = Instance.new("TextLabel", TopBar)
+    TitleLabel.Size = UDim2.new(1, 0, 1, 0)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Text = titleText or "Made by Sim"
+    TitleLabel.TextColor3 = Color3.fromRGB(201, 201, 201)
+    TitleLabel.Font = Enum.Font.PatrickHand
+    TitleLabel.TextScaled = true
+
+    -- 왼쪽 탭 바 & 오른쪽/하단 디자인 프레임
+    local LeftBar = Instance.new("ImageLabel", MainFrame)
+    LeftBar.Size = UDim2.new(0.25, 0, 0.9, -2)
+    LeftBar.Position = UDim2.new(0, 0, 0.06, 1)
+    LeftBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    local LeftBarLayout = Instance.new("UIListLayout", LeftBar)
+    LeftBarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    -- 워크스페이스 (탭 내용물이 들어갈 곳)
+    local Workspace = Instance.new("Frame", MainFrame)
+    Workspace.Size = UDim2.new(0.69, -2, 0.9, -2)
+    Workspace.Position = UDim2.new(0.25, 1, 0.06, 1)
+    Workspace.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Workspace.BorderSizePixel = 0
+
+    local firstTab = true
+
+    function Window:CreateTab(tabName)
+        local Tab = {}
+        
+        -- 탭 버튼
+        local TabButton = Instance.new("TextButton", LeftBar)
+        TabButton.Size = UDim2.new(1, 0, 0.1, 0)
+        TabButton.Text = tabName
+        TabButton.TextColor3 = Color3.fromRGB(201, 201, 201)
+        TabButton.BackgroundTransparency = 1
+        TabButton.Font = Enum.Font.PatrickHand
+        TabButton.TextScaled = true
+
+        -- 탭 스크롤 프레임
+        local ScrollFrame = Instance.new("ScrollingFrame", Workspace)
+        ScrollFrame.Size = UDim2.new(1, 0, 1, 0)
+        ScrollFrame.BackgroundTransparency = 1
+        ScrollFrame.ScrollBarThickness = 5
+        ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(136, 81, 236)
+        ScrollFrame.Visible = firstTab
+        firstTab = false
+        
+        local ScrollLayout = Instance.new("UIListLayout", ScrollFrame)
+        ScrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        ScrollLayout.Padding = UDim.new(0, 5)
+
+        TabButton.MouseButton1Click:Connect(function()
+            for _, child in pairs(Workspace:GetChildren()) do
+                if child:IsA("ScrollingFrame") then child.Visible = false end
+            end
+            ScrollFrame.Visible = true
+        end)
+
+        function Tab:CreateGroup()
+            local Group = {}
+            
+            local GroupFrame = Instance.new("Frame", ScrollFrame)
+            GroupFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            GroupFrame.BackgroundTransparency = 1
+            GroupFrame.Size = UDim2.new(1, -2, 0, 0)
+            GroupFrame.AutomaticSize = Enum.AutomaticSize.Y
+            Instance.new("UICorner", GroupFrame)
+            
+            local Stroke = Instance.new("UIStroke", GroupFrame)
+            Stroke.Color = Color3.fromRGB(201, 201, 201)
+            
+            local GroupLayout = Instance.new("UIListLayout", GroupFrame)
+            GroupLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+            -- [ 토글 추가 함수 ]
+            function Group:AddToggle(name, callback)
+                local state = false
+                local Toggle = Instance.new("Frame", GroupFrame)
+                Toggle.Size = UDim2.new(1, 0, 0, 40)
+                Toggle.BackgroundTransparency = 1
+                
+                local Title = Instance.new("TextLabel", Toggle)
+                Title.Size = UDim2.new(0.5, 0, 0.5, 0)
+                Title.Position = UDim2.new(0.05, 0, 0.25, 0)
+                Title.Text = name
+                Title.TextColor3 = Color3.fromRGB(201, 201, 201)
+                Title.Font = Enum.Font.PatrickHand
+                Title.TextScaled = true
+                Title.TextXAlignment = Enum.TextXAlignment.Left
+                Title.BackgroundTransparency = 1
+                
+                local Button = Instance.new("TextButton", Toggle)
+                Button.Size = UDim2.new(0, 40, 0.5, 0)
+                Button.Position = UDim2.new(0.85, 0, 0.25, 0)
+                Button.Text = ""
+                Button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                Instance.new("UICorner", Button).CornerRadius = UDim.new(0.2, 0)
+                local BtnStroke = Instance.new("UIStroke", Button)
+                BtnStroke.Color = Color3.fromRGB(201, 201, 201)
+
+                Button.MouseButton1Click:Connect(function()
+                    state = not state
+                    Button.BackgroundColor3 = state and Color3.fromRGB(136, 81, 236) or Color3.fromRGB(0, 0, 0)
+                    if callback then callback(state) end
+                end)
+            end
+
+            -- [ 슬라이더 추가 함수 ]
+            function Group:AddSlider(name, min, max, default, callback)
+                local SliderFrame = Instance.new("Frame", GroupFrame)
+                SliderFrame.Size = UDim2.new(1, 0, 0, 50)
+                SliderFrame.BackgroundTransparency = 1
+
+                local Title = Instance.new("TextLabel", SliderFrame)
+                Title.Size = UDim2.new(0.5, 0, 0.5, 0)
+                Title.Position = UDim2.new(0.05, 0, 0.25, 0)
+                Title.Text = name
+                Title.TextColor3 = Color3.fromRGB(201, 201, 201)
+                Title.Font = Enum.Font.PatrickHand
+                Title.TextScaled = true
+                Title.TextXAlignment = Enum.TextXAlignment.Left
+                Title.BackgroundTransparency = 1
+
+                local ValueText = Instance.new("TextLabel", SliderFrame)
+                ValueText.Size = UDim2.new(0.18, 0, 0.5, 0)
+                ValueText.Position = UDim2.new(0.85, 0, 0.25, 0)
+                ValueText.Text = tostring(default)
+                ValueText.TextColor3 = Color3.fromRGB(136, 81, 236)
+                ValueText.Font = Enum.Font.PatrickHand
+                ValueText.TextScaled = true
+                ValueText.BackgroundTransparency = 1
+
+                local Bar = Instance.new("TextButton", SliderFrame)
+                Bar.Size = UDim2.new(0.4, 0, 0.1, 0)
+                Bar.Position = UDim2.new(0.4, 0, 0.45, 0)
+                Bar.BackgroundColor3 = Color3.fromRGB(201, 201, 201)
+                Bar.Text = ""
+                Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
+
+                local Fill = Instance.new("Frame", Bar)
+                Fill.Size = UDim2.new(math.clamp((default - min) / (max - min), 0, 1), 0, 1, 0)
+                Fill.BackgroundColor3 = Color3.fromRGB(136, 81, 236)
+                Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
+
+                local dragging = false
+                Bar.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
+                end)
+                UserInputService.InputEnded:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+                end)
+
+                UserInputService.InputChanged:Connect(function(input)
+                    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                        local mousePos = UserInputService:GetMouseLocation().X
+                        local relativePos = mousePos - Bar.AbsolutePosition.X
+                        local percentage = math.clamp(relativePos / Bar.AbsoluteSize.X, 0, 1)
+                        
+                        Fill.Size = UDim2.new(percentage, 0, 1, 0)
+                        local value = math.floor(min + ((max - min) * percentage))
+                        ValueText.Text = tostring(value)
+                        if callback then callback(value) end
+                    end
+                end)
+            end
+
+            -- [ 드롭다운 추가 함수 ]
+            function Group:AddDropdown(name, options, callback)
+                local DropFrame = Instance.new("Frame", GroupFrame)
+                DropFrame.Size = UDim2.new(1, 0, 0, 50)
+                DropFrame.BackgroundTransparency = 1
+
+                local Title = Instance.new("TextLabel", DropFrame)
+                Title.Size = UDim2.new(0.5, 0, 0.5, 0)
+                Title.Position = UDim2.new(0.05, 0, 0.25, 0)
+                Title.Text = name
+                Title.TextColor3 = Color3.fromRGB(201, 201, 201)
+                Title.Font = Enum.Font.PatrickHand
+                Title.TextScaled = true
+                Title.TextXAlignment = Enum.TextXAlignment.Left
+                Title.BackgroundTransparency = 1
+
+                local DropButton = Instance.new("TextButton", DropFrame)
+                DropButton.Size = UDim2.new(0.3, 0, 0.6, 0)
+                DropButton.Position = UDim2.new(0.65, 0, 0.2, 0)
+                DropButton.Text = "Select..."
+                DropButton.TextColor3 = Color3.fromRGB(136, 81, 236)
+                DropButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                DropButton.Font = Enum.Font.PatrickHand
+                DropButton.TextScaled = true
+                Instance.new("UICorner", DropButton).CornerRadius = UDim.new(0.2, 0)
+                local DropStroke = Instance.new("UIStroke", DropButton)
+                DropStroke.Color = Color3.fromRGB(201, 201, 201)
+
+                -- 드롭다운 리스트 컨테이너
+                local List = Instance.new("Frame", DropFrame)
+                List.Size = UDim2.new(0.3, 0, 0, 0)
+                List.Position = UDim2.new(0.65, 0, 0.85, 0)
+                List.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                List.AutomaticSize = Enum.AutomaticSize.Y
+                List.Visible = false
+                List.ZIndex = 5 -- 다른 요소 위로 올라오게 설정
+                Instance.new("UICorner", List)
+                local ListStroke = Instance.new("UIStroke", List)
+                ListStroke.Color = Color3.fromRGB(201, 201, 201)
+                
+                local ListLayout = Instance.new("UIListLayout", List)
+                ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+                DropButton.MouseButton1Click:Connect(function()
+                    List.Visible = not List.Visible
+                end)
+
+                for _, option in ipairs(options) do
+                    local OptionBtn = Instance.new("TextButton", List)
+                    OptionBtn.Size = UDim2.new(1, 0, 0, 30)
+                    OptionBtn.Text = option
+                    OptionBtn.TextColor3 = Color3.fromRGB(201, 201, 201)
+                    OptionBtn.BackgroundTransparency = 1
+                    OptionBtn.Font = Enum.Font.PatrickHand
+                    OptionBtn.TextScaled = true
+                    OptionBtn.ZIndex = 6
+
+                    OptionBtn.MouseButton1Click:Connect(function()
+                        DropButton.Text = option
+                        List.Visible = false
+                        if callback then callback(option) end
+                    end)
+                end
+            end
+
+            return Group
+        end
+
+        return Tab
+    end
+
+    return Window
+end
+
+return Library
