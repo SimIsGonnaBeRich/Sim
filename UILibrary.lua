@@ -5,7 +5,6 @@ local Players = game:GetService("Players")
 function Library:CreateWindow(titleText)
     local Window = {}
     
-    -- [[ 1. 기본 창 생성 ]]
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "SimUIHub"
     ScreenGui.IgnoreGuiInset = true
@@ -19,7 +18,6 @@ function Library:CreateWindow(titleText)
     MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
-    -- [ 창 드래그(이동) 기능 ]
     local dragging, dragInput, dragStart, startPos
     MainFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -41,7 +39,6 @@ function Library:CreateWindow(titleText)
         end
     end)
 
-    -- [[ 2. 디자인 바(Bar) 구성 ]]
     local TopBar = Instance.new("Frame", MainFrame)
     TopBar.Size = UDim2.new(1, 0, 0.06, 0)
     TopBar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -92,7 +89,6 @@ function Library:CreateWindow(titleText)
 
     local firstTab = true
 
-    -- [[ 3. 탭(Tab) 생성 함수 ]]
     function Window:CreateTab(tabName)
         local Tab = {}
         
@@ -122,11 +118,10 @@ function Library:CreateWindow(titleText)
             end
             ScrollFrame.Visible = true
         end)
-
-        -- [[ 4. 그룹(Group) 생성 함수 ]]
+        
         function Tab:CreateGroup()
             local Group = {}
-            local orderCounter = 1 -- 📌 LayoutOrder 순서를 정렬할 카운터
+            local orderCounter = 1
             
             local GroupFrame = Instance.new("Frame", ScrollFrame)
             GroupFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -140,8 +135,6 @@ function Library:CreateWindow(titleText)
             
             local GroupLayout = Instance.new("UIListLayout", GroupFrame)
             GroupLayout.SortOrder = Enum.SortOrder.LayoutOrder -- 📌 LayoutOrder로 정렬
-
-            -- 📌 구분선(Border) 자동 추가 & LayoutOrder 지정 로직
             local function checkBorder()
                 if orderCounter > 1 then
                     local Border = Instance.new("Frame", GroupFrame)
@@ -154,14 +147,13 @@ function Library:CreateWindow(titleText)
                 end
             end
 
-            -- [ 1. 일반 토글 ]
             function Group:AddToggle(name, callback)
                 checkBorder()
                 local state = false
                 local Toggle = Instance.new("Frame", GroupFrame)
                 Toggle.Size = UDim2.new(1, 0, 0, 40)
                 Toggle.BackgroundTransparency = 1
-                Toggle.LayoutOrder = orderCounter -- 📌 위치 고정
+                Toggle.LayoutOrder = orderCounter
                 orderCounter = orderCounter + 1
                 
                 local Title = Instance.new("TextLabel", Toggle)
@@ -190,7 +182,6 @@ function Library:CreateWindow(titleText)
                 end)
             end
 
-            -- [ 2. 일반 슬라이더 ]
             function Group:AddSlider(name, min, max, default, callback)
                 checkBorder()
                 local SliderFrame = Instance.new("Frame", GroupFrame)
@@ -252,7 +243,6 @@ function Library:CreateWindow(titleText)
                 end)
             end
 
-            -- [ 3. 드롭다운 ]
             function Group:AddDropdown(name, options, callback)
                 checkBorder()
                 local DropFrame = Instance.new("Frame", GroupFrame)
@@ -319,11 +309,11 @@ function Library:CreateWindow(titleText)
                 end
             end
 
-            -- 📌 [ 4. 토글 + 슬라이더 통합본 (ToggleSlider) ]
-            function Group:AddToggleSlider(name, min, max, default, callback)
+            -- [ 4. 토글 + 슬라이더 통합본 (ToggleSlider) ]
+            function Group:AddToggleSlider(name, min, max, defaultState, defaultValue, callback)
                 checkBorder()
-                local state = false -- 토글 상태
-                local currentValue = default
+                local state = defaultState -- 📌 초기 토글 상태 반영
+                local currentValue = defaultValue
                 
                 local TSFrame = Instance.new("Frame", GroupFrame)
                 TSFrame.Size = UDim2.new(1, 0, 0, 60)
@@ -341,20 +331,18 @@ function Library:CreateWindow(titleText)
                 Title.TextXAlignment = Enum.TextXAlignment.Left
                 Title.BackgroundTransparency = 1
                 
-                -- 버튼(토글 겸 수치 표시)
                 local ValueBtn = Instance.new("TextButton", TSFrame)
-                ValueBtn.Size = UDim2.new(0, 45, 0.5, 0) -- 제공된 UIAspectRatio 기준
+                ValueBtn.Size = UDim2.new(0, 45, 0.5, 0)
                 ValueBtn.Position = UDim2.new(0.85, 0, 0.25, 0)
-                ValueBtn.Text = "" -- 꺼져있을 땐 텍스트 숨김 (일반 토글처럼)
+                ValueBtn.Text = state and tostring(currentValue) or ""
                 ValueBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-                ValueBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                ValueBtn.BackgroundColor3 = state and Color3.fromRGB(136, 81, 236) or Color3.fromRGB(0, 0, 0) -- 📌 초기 색상 반영
                 ValueBtn.Font = Enum.Font.PatrickHand
                 ValueBtn.TextScaled = true
                 Instance.new("UICorner", ValueBtn).CornerRadius = UDim.new(0.2, 0)
                 local BtnStroke = Instance.new("UIStroke", ValueBtn)
                 BtnStroke.Color = Color3.fromRGB(201, 201, 201)
                 
-                -- 슬라이더 바
                 local Bar = Instance.new("TextButton", TSFrame)
                 Bar.Size = UDim2.new(0.35, 0, 0.1, 0)
                 Bar.Position = UDim2.new(0.48, 0, 0.45, 0)
@@ -363,27 +351,25 @@ function Library:CreateWindow(titleText)
                 Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
                 
                 local Fill = Instance.new("Frame", Bar)
-                Fill.Size = UDim2.new(math.clamp((default - min) / (max - min), 0, 1), 0, 1, 0)
+                Fill.Size = UDim2.new(math.clamp((defaultValue - min) / (max - min), 0, 1), 0, 1, 0)
                 Fill.BackgroundColor3 = Color3.fromRGB(136, 81, 236)
                 Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
 
-                -- 📌 토글 클릭 로직
                 ValueBtn.MouseButton1Click:Connect(function()
                     state = not state
                     if state then
                         ValueBtn.BackgroundColor3 = Color3.fromRGB(136, 81, 236)
-                        ValueBtn.Text = tostring(currentValue) -- 켜지면 수치 보임
+                        ValueBtn.Text = tostring(currentValue)
                     else
                         ValueBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                        ValueBtn.Text = "" -- 꺼지면 수치 숨김
+                        ValueBtn.Text = ""
                     end
                     if callback then callback(state, currentValue) end
                 end)
                 
-                -- 📌 슬라이더 드래그 로직 (토글이 켜져있을 때만 유효!)
                 local dragging = false
                 Bar.InputBegan:Connect(function(input)
-                    if not state then return end -- 켜져있지 않으면 무시!
+                    if not state then return end
                     if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
                 end)
                 UserInputService.InputEnded:Connect(function(input)
@@ -399,7 +385,6 @@ function Library:CreateWindow(titleText)
                         Fill.Size = UDim2.new(percentage, 0, 1, 0)
                         currentValue = math.floor(min + ((max - min) * percentage))
                         
-                        -- 수치 실시간 업데이트
                         ValueBtn.Text = tostring(currentValue)
                         if callback then callback(state, currentValue) end
                     end
