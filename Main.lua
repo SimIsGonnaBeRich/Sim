@@ -11,7 +11,6 @@ local ZombiesFolder = Workspace:WaitForChild("Zombies")
 
 local Alive
 
--- ⚙️ [수정됨] Settings에 ZombiePriorities 테이블 추가
 getgenv().Settings = getgenv().Settings or {
     SelectedWeapon = "None",
     SilentAim = false,
@@ -29,7 +28,6 @@ getgenv().Settings = getgenv().Settings or {
     RemoveFirstNightLimit =false,
     AutoVote = "None",
     
-    -- 👇 나중에 커스텀 UI에서 조작할 우선순위 데이터
     ZombiePriorities = {
         Annihilator = 7,
         ArmouredZombie = 1,
@@ -311,7 +309,6 @@ do -- TargetManager
                 end
             end
             
-            -- 🎯 [수정됨] 하드코딩 삭제! 글로벌 세팅에서 현재 우선순위를 실시간으로 가져옵니다.
             local priority = getgenv().Settings.ZombiePriorities[zombie.Name]
             
             if not priority then 
@@ -339,6 +336,10 @@ do -- TargetManager
             end
 
             local distance = (targetPart.Position - humanoidRootPartPosition).Magnitude
+            
+            if distance <= 100 then
+                priority = priority + 100
+            end
             
             if priority > targetPriority then
                 targetPriority = priority
