@@ -869,3 +869,5 @@ function Group:CreateToggle(options) return CreateToggle(self.Frame, options) en
 function Group:CreateSlider(options) return CreateSlider(self.Frame, options) end
 function Group:CreateDropdown(options) return CreateDropdown(self.Frame, options) end
 function Group:CreateToggleSlider(options) return CreateToggleSlider(self.Frame, options) end
+
+return Library
