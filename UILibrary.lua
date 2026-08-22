@@ -741,22 +741,22 @@ end
 local function CreateToggleSlider(parent, options)
     options = Library:validate({name = "ToggleSlider", min = 0, max = 100, defaultVal = 50, defaultToggle = false, callback = function() end}, options or {})
     
-    local ts = setmetatable({}, ToggleSlider)
-    ts.Value = math.clamp(options.defaultVal, options.min, options.max)
-    ts.State = options.defaultToggle
-    ts.Dragging = false
-    ts.ToggleHover = false
-    ts.BarHover = false
+    local toggleSlider = setmetatable({}, ToggleSlider)
+    toggleSlider.Value = math.clamp(options.defaultVal, options.min, options.max)
+    toggleSlider.State = options.defaultToggle
+    toggleSlider.Dragging = false
+    toggleSlider.ToggleHover = false
+    toggleSlider.BarHover = false
 
-    ts.Frame1 = Instance.new("Frame", parent)
-    ts.Frame1.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-    ts.Frame1.Size = UDim2.new(1, 0, 0, 62)
-    ts.Frame1.BackgroundTransparency = 0.4
+    toggleSlider.Frame1 = Instance.new("Frame", parent)
+    toggleSlider.Frame1.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+    toggleSlider.Frame1.Size = UDim2.new(1, 0, 0, 62)
+    toggleSlider.Frame1.BackgroundTransparency = 0.4
     
-    local UIStroke1 = Instance.new("UIStroke", ts.Frame1)
+    local UIStroke1 = Instance.new("UIStroke", toggleSlider.Frame1)
     UIStroke1.Color = Color3.fromRGB(56, 56, 56)
     
-    local TextLabel1 = Instance.new("TextLabel", ts.Frame1)
+    local TextLabel1 = Instance.new("TextLabel", toggleSlider.Frame1)
     TextLabel1.TextSize = 18
     TextLabel1.TextXAlignment = Enum.TextXAlignment.Left
     TextLabel1.FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json")
@@ -766,31 +766,31 @@ local function CreateToggleSlider(parent, options)
     TextLabel1.Position = UDim2.new(0, 6, 0, 0)
     TextLabel1.Text = options.name
     
-    local Frame2 = Instance.new("Frame", ts.Frame1)
+    local Frame2 = Instance.new("Frame", toggleSlider.Frame1)
     Frame2.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
     Frame2.AnchorPoint = Vector2.new(1, 0)
     Frame2.Size = UDim2.new(0, 32, 0, 32)
     Frame2.Position = UDim2.new(1, -6, 0, 6)
     Frame2.BorderColor3 = Color3.fromRGB(56, 56, 56)
     
-    ts.Frame3 = Instance.new("Frame", Frame2)
-    ts.Frame3.BackgroundColor3 = Color3.fromRGB(224, 224, 224)
-    ts.Frame3.Size = UDim2.new(1, -12, 1, -12)
-    ts.Frame3.Position = UDim2.new(0, 6, 0, 6)
-    ts.Frame3.Visible = ts.State
+    toggleSlider.Frame3 = Instance.new("Frame", Frame2)
+    toggleSlider.Frame3.BackgroundColor3 = Color3.fromRGB(224, 224, 224)
+    toggleSlider.Frame3.Size = UDim2.new(1, -12, 1, -12)
+    toggleSlider.Frame3.Position = UDim2.new(0, 6, 0, 6)
+    toggleSlider.Frame3.Visible = toggleSlider.State
     
-    ts.TextLabel2 = Instance.new("TextLabel", ts.Frame1)
-    ts.TextLabel2.TextSize = 18
-    ts.TextLabel2.TextXAlignment = Enum.TextXAlignment.Right
-    ts.TextLabel2.FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json")
-    ts.TextLabel2.TextColor3 = Color3.fromRGB(224, 224, 224)
-    ts.TextLabel2.BackgroundTransparency = 1
-    ts.TextLabel2.AnchorPoint = Vector2.new(1, 0)
-    ts.TextLabel2.Size = UDim2.new(1, -44, 0, 44)
-    ts.TextLabel2.Position = UDim2.new(1, -44, 0, 0)
-    ts.TextLabel2.Text = tostring(ts.Value)
+    toggleSlider.TextLabel2 = Instance.new("TextLabel", toggleSlider.Frame1)
+    toggleSlider.TextLabel2.TextSize = 18
+    toggleSlider.TextLabel2.TextXAlignment = Enum.TextXAlignment.Right
+    toggleSlider.TextLabel2.FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json")
+    toggleSlider.TextLabel2.TextColor3 = Color3.fromRGB(224, 224, 224)
+    toggleSlider.TextLabel2.BackgroundTransparency = 1
+    toggleSlider.TextLabel2.AnchorPoint = Vector2.new(1, 0)
+    toggleSlider.TextLabel2.Size = UDim2.new(1, -44, 0, 44)
+    toggleSlider.TextLabel2.Position = UDim2.new(1, -44, 0, 0)
+    toggleSlider.TextLabel2.Text = tostring(toggleSlider.Value)
     
-    local Frame4 = Instance.new("Frame", ts.Frame1)
+    local Frame4 = Instance.new("Frame", toggleSlider.Frame1)
     Frame4.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
     Frame4.AnchorPoint = Vector2.new(0, 1)
     Frame4.Size = UDim2.new(1, -12, 0, 12)
@@ -800,62 +800,62 @@ local function CreateToggleSlider(parent, options)
     local UIStroke2 = Instance.new("UIStroke", Frame4)
     UIStroke2.Color = Color3.fromRGB(56, 56, 56)
     
-    ts.Frame5 = Instance.new("Frame", Frame4)
-    ts.Frame5.BackgroundColor3 = Color3.fromRGB(224, 224, 224)
-    ts.Frame5.Size = UDim2.new((ts.Value - options.min) / (options.max - options.min), 0, 1, 0)
+    toggleSlider.Frame5 = Instance.new("Frame", Frame4)
+    toggleSlider.Frame5.BackgroundColor3 = Color3.fromRGB(224, 224, 224)
+    toggleSlider.Frame5.Size = UDim2.new((toggleSlider.Value - options.min) / (options.max - options.min), 0, 1, 0)
     
     local function UpdateVisuals()
-        if ts.State then
+        if toggleSlider.State then
             Library:Tween(TextLabel1, {TextColor3 = Color3.fromRGB(224, 224, 224)})
-            Library:Tween(ts.TextLabel2, {TextColor3 = Color3.fromRGB(224, 224, 224)})
-            Library:Tween(ts.Frame5, {BackgroundColor3 = Color3.fromRGB(224, 224, 224)})
+            Library:Tween(toggleSlider.TextLabel2, {TextColor3 = Color3.fromRGB(224, 224, 224)})
+            Library:Tween(toggleSlider.Frame5, {BackgroundColor3 = Color3.fromRGB(224, 224, 224)})
         else
             Library:Tween(TextLabel1, {TextColor3 = Color3.fromRGB(102, 102, 102)})
-            Library:Tween(ts.TextLabel2, {TextColor3 = Color3.fromRGB(102, 102, 102)})
-            Library:Tween(ts.Frame5, {BackgroundColor3 = Color3.fromRGB(102, 102, 102)})
-            ts.Dragging = false
+            Library:Tween(toggleSlider.TextLabel2, {TextColor3 = Color3.fromRGB(102, 102, 102)})
+            Library:Tween(toggleSlider.Frame5, {BackgroundColor3 = Color3.fromRGB(102, 102, 102)})
+            toggleSlider.Dragging = false
         end
     end
 
     local function UpdateSlider(input)
         local pos = math.clamp((input.Position.X - Frame4.AbsolutePosition.X) / Frame4.AbsoluteSize.X, 0, 1)
-        ts.Value = math.floor(options.min + (options.max - options.min) * pos)
-        ts.TextLabel2.Text = tostring(ts.Value)
-        Library:Tween(ts.Frame5, {Size = UDim2.new(pos, 0, 1, 0)})
-        options.callback(ts.Value, ts.State)
+        toggleSlider.Value = math.floor(options.min + (options.max - options.min) * pos)
+        toggleSlider.TextLabel2.Text = tostring(toggleSlider.Value)
+        Library:Tween(toggleSlider.Frame5, {Size = UDim2.new(pos, 0, 1, 0)})
+        options.callback(toggleSlider.Value, toggleSlider.State)
     end
     
-    Frame2.MouseEnter:Connect(function() ts.ToggleHover = true end)
-    Frame2.MouseLeave:Connect(function() ts.ToggleHover = false end)
-    Frame4.MouseEnter:Connect(function() ts.BarHover = true end)
-    Frame4.MouseLeave:Connect(function() ts.BarHover = false end)
+    Frame2.MouseEnter:Connect(function() toggleSlider.ToggleHover = true end)
+    Frame2.MouseLeave:Connect(function() toggleSlider.ToggleHover = false end)
+    Frame4.MouseEnter:Connect(function() toggleSlider.BarHover = true end)
+    Frame4.MouseLeave:Connect(function() toggleSlider.BarHover = false end)
     
     UserInputService.InputBegan:Connect(function(input, gpe)
         if gpe then return end
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            if ts.ToggleHover then
-                ts.State = not ts.State
-                ts.Frame3.Visible = ts.State
+            if toggleSlider.ToggleHover then
+                toggleSlider.State = not toggleSlider.State
+                toggleSlider.Frame3.Visible = toggleSlider.State
                 UpdateVisuals()
-                options.callback(ts.Value, ts.State)
-            elseif ts.BarHover and ts.State then
-                ts.Dragging = true
+                options.callback(toggleSlider.Value, toggleSlider.State)
+            elseif toggleSlider.BarHover and toggleSlider.State then
+                toggleSlider.Dragging = true
                 UpdateSlider(input)
             end
         end
     end)
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then ts.Dragging = false end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then toggleSlider.Dragging = false end
     end)
     UserInputService.InputChanged:Connect(function(input)
-        if ts.Dragging and ts.State and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if toggleSlider.Dragging and toggleSlider.State and input.UserInputType == Enum.UserInputType.MouseMovement then
             UpdateSlider(input)
         end
     end)
     
     UpdateVisuals()
     
-    return ts
+    return toggleSlider
 end
 
 function Tab:CreateButton(options) return CreateButton(self.ScrollingFrame, options) end
